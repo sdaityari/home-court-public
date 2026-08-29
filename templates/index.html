@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+  // Runs before the stylesheet below is parsed, so a saved dark-mode
+  // preference applies with no flash of the light theme first.
+  (function() {
+    try {
+      if (localStorage.getItem('homecourt-theme') === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    } catch (e) { /* localStorage unavailable — just falls back to light */ }
+  })();
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Home Court</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+</head>
+<body>
+
+  <div class="header">
+    <div class="brand">HOME&nbsp;COURT<span>.</span></div>
+    <div class="clock-row">
+      <div class="clock" id="clock">Thu 14 Aug — 9:42 PM ET</div>
+      <div class="filter-wrap">
+        <button class="filter-btn" id="filterBtn" aria-label="Filters" aria-expanded="false">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+            <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+            <line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
+          </svg>
+        </button>
+        <div class="filter-panel" id="filterPanel" hidden>
+          <div class="filter-row">
+            <label class="filter-toggle-label">
+              <span>Dark Mode</span>
+              <input type="checkbox" id="darkModeToggle" class="toggle-input">
+            </label>
+          </div>
+          <div class="filter-row">
+            <label class="filter-toggle-label">
+              <span>Show Full Schedule</span>
+              <input type="checkbox" id="fullScheduleToggle" class="toggle-input">
+            </label>
+          </div>
+          <div class="filter-divider"></div>
+          <div id="filterTeams"><div class="filter-empty">Loading teams…</div></div>
+        </div>
+      </div>
+      <button class="refresh-btn" id="refreshBtn" aria-label="Refresh live scores now" title="Refresh">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- LIVE -->
+  <div id="liveSection">
+    <div class="section-label live-label"><span class="dot"></span>Live now</div>
+    <div class="live-grid" id="liveGrid"></div>
+  </div>
+
+  <!-- UPCOMING + RECENT (upcoming first: left on desktop, top on mobile) -->
+  <div class="lower-grid">
+    <div>
+      <div class="section-label"><span class="dot"></span>Upcoming</div>
+      <div class="list-panel" id="upcomingPanel"></div>
+    </div>
+    <div>
+      <div class="section-label"><span class="dot"></span>Recent</div>
+      <div class="list-panel" id="recentPanel"></div>
+    </div>
+  </div>
+
+  <footer id="footerStatus">LOADING SCORES…</footer>
+
+  <!-- MINIMALIST E-INK VIEW — only rendered at an exact 800px viewport
+       (TRMNL on Kindle hardware). See the #miniView CSS block above. -->
+  <div id="miniView">
+    <div class="mini-header">
+      <span class="mini-brand">Home Court</span>
+      <span class="mini-updated" id="miniUpdated">UPDATING…</span>
+    </div>
+    <div class="mini-live" id="miniLive"></div>
+    <div class="mini-sections">
+      <div class="mini-section">
+        <div class="mini-col-title">Upcoming</div>
+        <div id="miniUpcoming"></div>
+      </div>
+      <div class="mini-section">
+        <div class="mini-col-title">Results</div>
+        <div id="miniRecent"></div>
+      </div>
+    </div>
+  </div>
+
+<script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+</body>
+</html>

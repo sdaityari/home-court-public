@@ -1,0 +1,726 @@
+  :root {
+    /* Light theme (default). Dark-mode values live in [data-theme="dark"]
+       below, which the toggle switch applies by setting an attribute on
+       <html> — everything here is a CSS custom property specifically so
+       the whole page reflows automatically without per-component JS. */
+    --bg: #F5F4EF;
+    --panel: #FFFFFF;
+    --panel-raised: #EFEDE6;
+    --hairline: #DEDBD1;
+    --text: #1C1F26;
+    --text-dim: #5C6472;
+    --text-faint: #9299A6;
+    --live: #D8362A;
+    --live-dim: #FBDAD6;
+    --win-bg: #DFF3E4;
+    --win-text: #1E7A3E;
+    --loss-bg: #FBE0DC;
+    --loss-text: #B23324;
+
+    --nyy: #0C2340;
+    --nyy-accent: #C4CED4;
+    --nyk: #006BB6;
+    --nyk-accent: #F58426;
+    --kkr: #3A225D;
+    --kkr-accent: #D4AF37;
+    --che: #034694;
+    --che-accent: #DBA111;
+    --ind: #1B3F8B;
+    --ind-accent: #FF671F;
+    --tennis: #8A9A5B;
+    --tennis-accent: #D7E08A;
+  }
+
+  [data-theme="dark"] {
+    --bg: #0A0C10;
+    --panel: #12151C;
+    --panel-raised: #171B24;
+    --hairline: #232833;
+    --text: #ECEAE2;
+    --text-dim: #7C8393;
+    --text-faint: #4B5160;
+    --live: #FF4B3E;
+    --live-dim: #4A1F1C;
+    --win-bg: #16321F;
+    --win-text: #5FD489;
+    --loss-bg: #3A1B1B;
+    --loss-text: #E8756A;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    padding: 28px 32px 60px;
+  }
+
+  /* ---------- Header ---------- */
+
+  .header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--hairline);
+    margin-bottom: 28px;
+  }
+
+  .header .brand {
+    font-family: 'Anton', sans-serif;
+    font-size: 30px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+  }
+
+  .header .brand span {
+    color: var(--text-faint);
+  }
+
+  .header .clock-row {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+
+  .header .clock {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 15px;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+
+  .refresh-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: var(--panel-raised);
+    border: 1px solid var(--hairline);
+    color: var(--text-dim);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .refresh-btn:hover { border-color: var(--text-faint); color: var(--text); }
+  .refresh-btn:focus-visible { outline: 2px solid var(--text-dim); outline-offset: 2px; }
+  .refresh-btn svg { width: 16px; height: 16px; }
+  .refresh-btn.spinning svg { animation: spin 0.6s linear; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ---------- Filters (theme, full schedule, extra teams) ---------- */
+  /* Lives inside .header, which the e-ink @media block below already hides
+     outright at 800px — so this needs no separate hide rule of its own. */
+
+  .filter-wrap { position: relative; }
+
+  .filter-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    background: var(--panel-raised);
+    border: 1px solid var(--hairline);
+    color: var(--text-dim);
+    border-radius: 50%;
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease;
+  }
+  .filter-btn:hover { border-color: var(--text-faint); color: var(--text); }
+  .filter-btn:focus-visible { outline: 2px solid var(--text-dim); outline-offset: 2px; }
+  .filter-btn svg { width: 16px; height: 16px; }
+  .filter-btn.active { border-color: var(--live); color: var(--live); }
+
+  .filter-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 280px;
+    max-height: min(70vh, 520px);
+    overflow-y: auto;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+    padding: 14px;
+    z-index: 20;
+  }
+  [data-theme="dark"] .filter-panel { box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
+  .filter-panel[hidden] { display: none; }
+
+  .filter-row { padding: 4px 0; }
+  .filter-toggle-label {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    cursor: pointer;
+  }
+
+  .filter-divider { height: 1px; background: var(--hairline); margin: 10px 0; }
+
+  .filter-league-group { margin-bottom: 12px; }
+  .filter-league-group:last-child { margin-bottom: 0; }
+  .filter-league-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    cursor: pointer;
+    margin-bottom: 6px;
+  }
+  .filter-league-title {
+    font-family: 'Inter', sans-serif;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .filter-league-header .filter-league-title { margin-bottom: 0; }
+  .filter-league-header .toggle-input { flex-shrink: 0; }
+  .filter-team-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 5px 0;
+    font-family: 'Inter', sans-serif;
+    font-size: 13px;
+    color: var(--text);
+    cursor: pointer;
+  }
+  .filter-team-row .name { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .filter-team-row .name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .filter-empty { font-size: 12px; color: var(--text-faint); padding: 4px 0; }
+
+  /* ---------- Toggle Control (shared checkbox styling) ---------- */
+  .toggle-input {
+    accent-color: var(--live);
+    cursor: pointer;
+    width: 14px;
+    height: 14px;
+    flex-shrink: 0;
+  }
+
+  /* ---------- Section labels ---------- */
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin: 34px 0 14px;
+  }
+
+  .section-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 2.5px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+  .section-header:first-of-type { margin-top: 0; }
+
+  .section-label .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--text-faint);
+  }
+  .section-label.live-label { color: var(--live); }
+  .section-label.live-label .dot {
+    background: var(--live);
+    box-shadow: 0 0 0 0 rgba(255, 75, 62, 0.6);
+    animation: pulse 1.8s infinite;
+  }
+  @keyframes pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(255, 75, 62, 0.55); }
+    70%  { box-shadow: 0 0 0 9px rgba(255, 75, 62, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 75, 62, 0); }
+  }
+
+  /* ---------- Live cards ---------- */
+
+  .live-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 14px;
+  }
+
+  .live-card {
+    position: relative;
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    padding: 18px 20px 16px 22px;
+    overflow: hidden;
+  }
+
+  .live-card::before {
+    content: "";
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 4px;
+    background: var(--accent-color, var(--text-faint));
+  }
+
+  .live-card .meta-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .live-card .league-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--accent-color, var(--text-dim));
+  }
+
+  .live-card .status {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--live);
+    font-weight: 500;
+  }
+
+  .matchup {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .team-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 0;
+  }
+
+  .team-line .name {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .team-line.followed .name { color: var(--text); }
+  .team-line:not(.followed) .name { color: var(--text-dim); font-weight: 500; }
+
+  /* ---------- Badges & sport icons ---------- */
+
+  .team-badge {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    object-fit: contain;
+    background: var(--panel-raised);
+  }
+  .team-badge.fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px;
+    font-weight: 700;
+    color: #0A0C10;
+    background: var(--accent-color, var(--text-faint));
+  }
+  .row .team-badge { width: 18px; height: 18px; }
+
+  .sport-icon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    opacity: 0.9;
+  }
+  .league-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  .team-line .score {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 22px;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+    min-width: 34px;
+    text-align: right;
+  }
+
+  /* Baseball/soccer live rows: "Team 4 – 2 Opponent" as one inline line,
+     rather than the default stacked team/score rows — see renderLive. */
+  .team-line .score-inline {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .live-card .detail-row {
+    margin-top: 4px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: var(--text-faint);
+  }
+
+  .watch-row {
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--hairline);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 12.5px;
+    color: var(--text-dim);
+  }
+  .watch-row .watch-label { color: var(--text-faint); }
+  .watch-row .watch-source { color: var(--text); font-weight: 600; }
+
+  /* ---------- Compact rows (upcoming / recent) ---------- */
+
+  .list-panel {
+    background: var(--panel);
+    border: 1px solid var(--hairline);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 3px 90px 1fr auto;
+    align-items: center;
+    gap: 16px;
+    padding: 13px 18px 13px 0;
+    border-bottom: 1px solid var(--hairline);
+  }
+  .row:last-child { border-bottom: none; }
+
+  .row .stripe {
+    align-self: stretch;
+    background: var(--accent-color, var(--text-faint));
+  }
+
+  .row .league-tag {
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--accent-color, var(--text-dim));
+  }
+
+  .row .matchup-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .row .matchup-main {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text);
+  }
+  .row .matchup-text .vs { color: var(--text-faint); font-weight: 400; margin: 0 6px; }
+  .row .competition-subtitle {
+    font-size: 10.5px;
+    font-weight: 500;
+    color: var(--text-faint);
+    padding-left: 26px; /* lines up under the name, past the team badge */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .row .side-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .row .result-badge {
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+  }
+  .result-badge.win { background: var(--win-bg); color: var(--win-text); }
+  .result-badge.loss { background: var(--loss-bg); color: var(--loss-text); }
+  .result-badge.draw { background: var(--panel-raised); color: var(--text-dim); }
+
+  /* Pale team accent colors (used as small text/icons here) read fine on
+     the near-black dark background but wash out on white. Darkening them
+     specifically where they're used as text — decorative stripes/badges
+     elsewhere stay untouched since a pale color as a solid block doesn't
+     have the same legibility problem a pale color as TEXT does. */
+  .league-tag { filter: brightness(0.72) saturate(1.15); }
+  [data-theme="dark"] .league-tag { filter: none; }
+
+  .highlight-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    text-decoration: none;
+    border: 1px solid var(--hairline);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  }
+  .highlight-link:hover { border-color: var(--text-faint); color: var(--text); background: var(--panel-raised); }
+  .highlight-link:focus-visible { outline: 2px solid var(--text-dim); outline-offset: 2px; }
+  .highlight-link svg { width: 12px; height: 12px; flex-shrink: 0; }
+
+  /* ---------- Day-group headers (Today / Tomorrow / Yesterday / ...) ---------- */
+
+  .day-group-header {
+    padding: 7px 18px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: var(--text-faint);
+    background: var(--panel-raised);
+    border-bottom: 1px solid var(--hairline);
+  }
+
+  /* ---------- Upcoming (more prominent) vs. Recent (more subdued) ---------- */
+  /* Live is already the most prominent section structurally (its own
+     full-width area above these two, larger cards, pulsing indicator) —
+     these rules only need to differentiate Upcoming from Recent, per the
+     LIVE → UPCOMING → RECENT priority order. */
+
+  .row-upcoming .matchup-main { font-weight: 600; }
+  .row-upcoming .side-info { color: var(--text); font-weight: 500; }
+
+  .row-recent .opponent-name { color: var(--text-dim); font-weight: 400; }
+
+  /* ---------- Layout grid for lower sections ---------- */
+
+  .lower-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 28px;
+  }
+
+  @media (max-width: 760px) {
+    .lower-grid { grid-template-columns: 1fr; }
+    .row { grid-template-columns: 3px 70px 1fr; }
+    .row .side-info { grid-column: 2 / -1; padding-left: 0; }
+    body { padding: 20px 16px 50px; }
+
+    /* The date/time was squeezed into a box too narrow for its own text
+       (no wrap control), so the browser broke it mid-word across several
+       lines. Stacking brand and clock-row onto their own full-width rows
+       gives the clock enough room to sit on one line at this width. */
+    .header {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 14px;
+    }
+    .header .clock-row {
+      width: 100%;
+      justify-content: space-between;
+    }
+  }
+
+  footer {
+    margin-top: 40px;
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-faint);
+    font-family: 'JetBrains Mono', monospace;
+    letter-spacing: 0.5px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .section-label.live-label .dot { animation: none; }
+    .refresh-btn.spinning svg { animation: none; }
+  }
+
+  /* ---------------------------------------------------------------------
+     Minimalist e-ink view — TRMNL displays running on Kindle hardware.
+     Triggered only at an exact 800px viewport (TRMNL's screenshot service
+     renders the page at the configured plugin size, then dithers it to
+     the device's grayscale panel). Everything below is a self-contained
+     alternate layout: no color reliance, no animation/transition (the
+     final frame is what gets captured), bold high-contrast type sized up
+     for an old low-res e-ink panel, and a hard 800x600 canvas with no
+     scrolling. The full dashboard is hidden outright at this breakpoint
+     rather than reflowed, since e-ink has no room for its buttons/links
+     or the complete-schedule toggle. */
+  #miniView { display: none; }
+
+  @media (width: 800px) {
+    html, body {
+      width: 800px;
+      height: 600px;
+      overflow: hidden;
+      background: #FFFFFF;
+    }
+    body { padding: 0; }
+
+    /* Full dashboard chrome — buttons, toggle, complete schedule — off. */
+    .header, #liveSection, .lower-grid, footer#footerStatus {
+      display: none !important;
+    }
+
+    *, *::before, *::after {
+      animation: none !important;
+      transition: none !important;
+    }
+
+    #miniView {
+      display: flex;
+      flex-direction: column;
+      width: 800px;
+      height: 600px;
+      padding: 20px 26px;
+      background: #FFFFFF;
+      color: #000000;
+      font-family: 'Inter', sans-serif;
+    }
+
+    .mini-header {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      flex-shrink: 0;
+      padding-bottom: 8px;
+      border-bottom: 3px solid #000;
+      margin-bottom: 10px;
+    }
+    .mini-brand {
+      font-family: 'Anton', sans-serif;
+      font-size: 28px;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+      color: #000;
+    }
+    .mini-updated {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      font-weight: 700;
+      color: #000;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .mini-live { flex-shrink: 0; margin-bottom: 10px; }
+    .mini-live:empty { margin: 0; }
+    .mini-live-label {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #000;
+      margin-bottom: 5px;
+    }
+    .mini-live-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      font-size: 19px;
+      font-weight: 700;
+      padding: 4px 0;
+      border-bottom: 1px solid #999;
+    }
+    .mini-live-row .mini-matchup { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mini-live-row .mini-live-status {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #000;
+      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    /* Stacked, full-width: Upcoming above Results. Full 748px of row width
+       (rather than splitting it into two ~350px columns) is what keeps
+       longer opponent names from overflowing the 800px canvas. */
+    .mini-sections {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
+    }
+    .mini-section { flex-shrink: 0; }
+    .mini-section + .mini-section { margin-top: 8px; }
+    .mini-col-title {
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: #000;
+      border-bottom: 3px solid #000;
+      padding-bottom: 4px;
+      margin-bottom: 3px;
+    }
+    .mini-row {
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 5px 0;
+      border-bottom: 1px solid #999;
+      font-size: 16px;
+      width: 100%;
+    }
+    .mini-row:last-child { border-bottom: none; }
+    .mini-row .mini-matchup {
+      flex: 1;
+      min-width: 0;
+      font-weight: 700;
+      color: #000;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .mini-row .mini-matchup .mini-vs { font-weight: 400; color: #444; margin: 0 6px; }
+    .mini-row .mini-side {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      font-weight: 700;
+      color: #000;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .mini-empty { font-size: 14px; color: #444; padding: 6px 0; }
+  }
