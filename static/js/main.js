@@ -8,17 +8,26 @@
  * displays whenever any one piece refreshes. Also wires up every
  * top-level DOM control (dark mode, filter panel, manual refresh, the
  * full-schedule toggle, the clock).
+ *
+ * Sport-scoped views (/sport/<sport>, see scope.js): loadEspnTeamsData
+ * and loadTennisData already only fetch what filters.js's
+ * buildActiveEspnTeams/buildActiveTennisAthletes hand back, and those are
+ * themselves sport-scoped — so ESPN/tennis are naturally narrowed with no
+ * extra filtering here. The backend feed (/api/scores — cricket +
+ * Chelsea) is NOT sport-scoped server-side, since it's one shared
+ * endpoint for every deployment; mergeAndRender applies the same
+ * sportMatches() check to it that filters.js applies everywhere else.
  */
 
-import { buildActiveEspnTeams, buildActiveTennisAthletes, renderFilterTeams, updateFilterBtnActiveState, initFilterCallbacks, setTennisPlayerCatalog } from './filters.js';
-import { applyData, setShowFullSchedule, teamOf, refreshFooterText } from './render.js';
+import { buildActiveEspnTeams, buildActiveTennisAthletes, renderFilterTeams, updateFilterBtnActiveState, initFilterCallbacks, setTennisPlayerCatalog, isHomeHidden } from './filters.js';
+import { applyData, setScheduleMode, teamOf, refreshFooterText } from './render.js';
 import { fetchEspnSchedule, classifyEspnEvents, fetchEventSummary, liveScoreFromSummary, pickSummaryLeague } from './espn.js';
 import { fetchTennisSchedule, classifyTennisEvents, collectTennisPlayers } from './tennis.js';
 import { parseDate, formatWhenClient, formatDateForSearch, attachHighlight, dedupeFixtures } from './utils.js';
+import { sportMatches } from './scope.js';
 
 const footerStatus = document.getElementById('footerStatus');
 const refreshBtn = document.getElementById('refreshBtn');
-const fullScheduleToggle = document.getElementById('fullScheduleToggle');
 
 // Cached results from the three independent fetch pieces — each refreshed
 // on its own schedule (backend: every 15 min; ESPN teams: every 15 min or
@@ -31,7 +40,7 @@ let lastTennisResult = { live: [], upcoming: [], recent: [] };
 // refreshTennisOnly) can reclassify without refetching the whole tour.
 const tennisEventsCache = { atp: null, wta: null };
 
-initFilterCallbacks(refreshEspnTeamsOnly, refreshTennisOnly);
+initFilterCallbacks(refreshEspnTeamsOnly, refreshTennisOnly, mergeAndRender);
 
   async function loadEspnTeamsData() {
     const live = [], upcoming = [], recent = [];
@@ -115,9 +124,10 @@ initFilterCallbacks(refreshEspnTeamsOnly, refreshTennisOnly);
   // to call after ANY of the three pieces refreshes on its own.
   function mergeAndRender() {
     const backendData = lastBackendData || { live: [], upcoming: [], recent: [], updated_at: null };
-    const backendLive = backendData.live || [];
-    const backendUpcoming = backendData.upcoming || [];
-    const backendRecent = backendData.recent || [];
+    const backendKeep = (g) => !isHomeHidden(g.team) && sportMatches(teamOf(g.team).sport);
+    const backendLive = (backendData.live || []).filter(backendKeep);
+    const backendUpcoming = (backendData.upcoming || []).filter(backendKeep);
+    const backendRecent = (backendData.recent || []).filter(backendKeep);
 
     const mappedUpcoming = backendUpcoming.map(g => ({
       ...g,
@@ -142,7 +152,7 @@ initFilterCallbacks(refreshEspnTeamsOnly, refreshTennisOnly);
 
     applyData({
       updated_at: backendData.updated_at,
-      live: [...lastEspnTeamsResult.live, ...lastTennisResult.live, ...mappedLive],
+      live: dedupeFixtures([...lastEspnTeamsResult.live, ...lastTennisResult.live, ...mappedLive]),
       upcoming: mergedUpcoming,
       recent: mergedRecent,
     });
@@ -207,15 +217,44 @@ initFilterCallbacks(refreshEspnTeamsOnly, refreshTennisOnly);
   setInterval(updateClock, 30000);
 
   const darkModeToggle = document.getElementById('darkModeToggle');
-  darkModeToggle.checked = document.documentElement.getAttribute('data-theme') === 'dark';
-  darkModeToggle.addEventListener('change', function() {
-    const goingDark = this.checked;
+  function setDarkModePressed(isDark) {
+    darkModeToggle.setAttribute('aria-pressed', String(isDark));
+  }
+  setDarkModePressed(document.documentElement.getAttribute('data-theme') === 'dark');
+  darkModeToggle.addEventListener('click', function() {
+    const goingDark = document.documentElement.getAttribute('data-theme') !== 'dark';
     if (goingDark) {
       document.documentElement.setAttribute('data-theme', 'dark');
     } else {
       document.documentElement.removeAttribute('data-theme');
     }
+    setDarkModePressed(goingDark);
     try { localStorage.setItem('homecourt-theme', goingDark ? 'dark' : 'light'); } catch (e) { /* ignore */ }
+  });
+
+  // 3-way schedule range: Compact / 7 Days / Full — a radio group of plain
+  // buttons rather than native radio inputs, to match the rest of the
+  // panel's button-driven controls (dark-mode icon, filter chips).
+  const scheduleSeg = document.getElementById('scheduleSeg');
+  const scheduleButtons = [...scheduleSeg.querySelectorAll('.seg-btn')];
+  function setScheduleButton(mode) {
+    scheduleButtons.forEach(btn => {
+      const isActive = btn.dataset.mode === mode;
+      btn.classList.toggle('active', isActive);
+      btn.setAttribute('aria-checked', String(isActive));
+    });
+  }
+  let savedScheduleMode = 'compact';
+  try { savedScheduleMode = localStorage.getItem('homecourt-schedule-mode') || 'compact'; } catch (e) { /* ignore */ }
+  setScheduleButton(savedScheduleMode);
+  setScheduleMode(savedScheduleMode);
+  scheduleButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+      setScheduleButton(mode);
+      setScheduleMode(mode);
+      try { localStorage.setItem('homecourt-schedule-mode', mode); } catch (e) { /* ignore */ }
+    });
   });
 
   const filterBtn = document.getElementById('filterBtn');
@@ -232,10 +271,6 @@ initFilterCallbacks(refreshEspnTeamsOnly, refreshTennisOnly);
       filterPanel.hidden = true;
       filterBtn.setAttribute('aria-expanded', 'false');
     }
-  });
-
-  fullScheduleToggle.addEventListener('change', (e) => {
-    setShowFullSchedule(e.target.checked);
   });
 
   refreshBtn.addEventListener('click', function() {

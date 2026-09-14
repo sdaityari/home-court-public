@@ -1,5 +1,5 @@
 /**
- * ESPN fetch + classification for the team sports (MLB/NBA/EPL/WSL/NWSL).
+ * ESPN fetch + classification for the team sports (MLB/NBA/NFL/EPL/WSL/NWSL).
  *
  * Fetched client-side deliberately: ESPN's public API blocks requests
  * from cloud/datacenter IPs (confirmed on this app's Render deployment),
@@ -140,7 +140,7 @@ export function classifyEspnEvents(events, code, cfg, teamId) {
             eventId: ev.id, competition,
           });
         } else if (state === 'pre') {
-          upcoming.push({ team: code, opponent, rawWhen: whenDt, when: formatWhenClient(whenDt), watch, url, competition });
+          upcoming.push({ team: code, opponent, rawWhen: whenDt, when: formatWhenClient(whenDt), watch, url, competition, eventId: ev.id });
         } else if (state === 'post') {
           if (!comp.status.type.completed) continue;
           const usScore = extractScoreValue(us.score);
@@ -150,7 +150,7 @@ export function classifyEspnEvents(events, code, cfg, teamId) {
           else if (usScore < themScore) { result = 'loss'; prefix = 'L'; }
           else { result = 'draw'; prefix = 'D'; }
           recent.push({
-            team: code, opponent, rawWhen: whenDt, when: formatWhenClient(whenDt), result, url, competition,
+            team: code, opponent, rawWhen: whenDt, when: formatWhenClient(whenDt), result, url, competition, eventId: ev.id,
             line: `${prefix} ${Math.trunc(usScore)}\u2013${Math.trunc(themScore)}`,
           });
         }

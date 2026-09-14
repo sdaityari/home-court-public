@@ -319,14 +319,14 @@ export function classifyTennisEvents(events, code, cfg) {
           });
         } else if (state === 'pre') {
           upcoming.push({ team: code, opponent, partner, rawWhen: whenDt,
-            when: formatWhenClient(whenDt), competition, watch, url });
+            when: formatWhenClient(whenDt), competition, watch, url, eventId: ev.id });
         } else if (state === 'post' && comp.status.type.completed) {
           const outcome = tennisResult(us, them);
           if (!competition) {
             console.warn(`Tennis competition name unresolved for a completed match (${code} vs ${opponent}) — raw event:`, ev);
           }
           recent.push({ team: code, opponent, partner, rawWhen: whenDt,
-            when: formatWhenClient(whenDt), competition, result: outcome.result, url,
+            when: formatWhenClient(whenDt), competition, result: outcome.result, url, eventId: ev.id,
             line: `${outcome.prefix} ${line}` });
         }
       } catch (e) {
@@ -364,13 +364,23 @@ export function collectTennisPlayers(events) {
       const competitors = comp && comp.competitors;
       if (!Array.isArray(competitors)) continue;
       for (const c of competitors) {
-        // athlete.id specifically — this is the same id space
-        // tennisCompetitorMatches checks cfg.id against, so a filter
-        // selection built from this id will actually match its own games.
-        // Doubles-team competitors have no .athlete, so they're skipped —
-        // keeps the filter to singles players only.
-        const id = c.athlete && c.athlete.id != null ? String(c.athlete.id) : null;
-        if (!id || map.has(id)) continue;
+        // The id that actually identifies this player lives on the
+        // COMPETITOR itself (c.id, e.g. "4030"), not on the nested athlete
+        // object — confirmed against a real ESPN ATP scoreboard response,
+        // where c.athlete only carries guid/displayName/shortName/
+        // fullName/flag/links and no id at all. This is the same id
+        // tennisCompetitorMatches/tennisAthleteMatches already key cfg.id
+        // against (via competitor.id) elsewhere in this file, so using it
+        // here is what makes a player added from a search result actually
+        // match their own games afterward — reading c.athlete.id instead
+        // silently produced an always-empty catalog, since that field
+        // doesn't exist in the real feed.
+        // Doubles-team competitors have no singular .athlete (they carry
+        // .athletes instead), so they're skipped here too — keeps the
+        // search catalog to singles players only.
+        if (!c.athlete || c.id == null) continue;
+        const id = String(c.id);
+        if (map.has(id)) continue;
         const name = tennisCompetitorDisplayName(c);
         if (name && name !== 'Opponent') map.set(id, name);
       }

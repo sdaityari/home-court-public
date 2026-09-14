@@ -2,11 +2,11 @@
  * DOM rendering — the live/upcoming/recent sections, the e-ink mini view,
  * and the footer status line. Owns the two pieces of view state that
  * drive what gets shown: currentData (the merged, already-classified
- * games) and showFullSchedule (the "Show Full Schedule" toggle).
+ * games) and scheduleMode (the Compact / 7 Days / Full range control).
  *
  * main.js is the only caller: it computes a fresh data set from the
  * fetch pipeline and hands it to applyData(), and forwards the schedule
- * toggle's change event to setShowFullSchedule().
+ * range control's clicks to setScheduleMode().
  */
 
 import { TEAMS, SPORT_ICONS, EXTRA_TEAM_CATALOG } from './teams.js';
@@ -21,13 +21,13 @@ const recentPanel = document.getElementById('recentPanel');
 const footerStatus = document.getElementById('footerStatus');
 
 let currentData = { live: [], upcoming: [], recent: [], updated_at: null };
-let showFullSchedule = false;
+let scheduleMode = 'compact'; // 'compact' | '7day' | 'full'
 
-// Called by main.js's "Show Full Schedule" toggle handler — re-renders the
+// Called by main.js's schedule-range segmented control — re-renders the
 // two sections it affects without needing to know anything about
 // currentData itself.
-export function setShowFullSchedule(value) {
-  showFullSchedule = value;
+export function setScheduleMode(mode) {
+  scheduleMode = mode;
   renderUpcoming(currentData.upcoming);
   renderRecent(currentData.recent);
 }
@@ -66,7 +66,11 @@ export function teamOf(code) {
 
 
 export function badgeHtml(t, size) {
-    if (t.logo) {
+    // Tennis headshots are only reliably available for a subset of ESPN
+    // athlete ids — mixing photos and initials-fallbacks within the same
+    // list read as broken rather than intentional, so tennis always uses
+    // the colored-initials badge, never an image.
+    if (t.logo && t.sport !== 'tennis') {
       return `<img class="team-badge" src="${t.logo}" alt="" width="${size}" height="${size}"
                 onerror="this.outerHTML='<span class=&quot;team-badge fallback&quot; style=&quot;--accent-color:${t.color}&quot;>${t.initials}</span>'">`;
     }
@@ -91,9 +95,18 @@ export function matchLinkHtml(url, label = "Match Link", extraStyle = "") {
   }
 
 export function filterGames(games) {
-    if (showFullSchedule) return games;
+    if (scheduleMode === 'full') return games;
 
-    // Default view: show one item per tracked team first, then fill the
+    if (scheduleMode === '7day') {
+      const now = Date.now();
+      const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+      return games.filter(g => {
+        const t = new Date(g.rawWhen || g.when).getTime();
+        return !Number.isNaN(t) && Math.abs(t - now) <= sevenDaysMs;
+      });
+    }
+
+    // Default (compact) view: show one item per tracked team first, then fill the
     // remaining slots from other teams so the dashboard still shows at
     // least five fixtures/results when some tracked teams are out of season.
     const minimumVisible = 5;
@@ -131,19 +144,20 @@ export function renderLive(games) {
     liveGrid.innerHTML = games.map(g => {
       const t = teamOf(g.team);
       const isTennis = t.sport === 'tennis';
-      const isScoreLine = t.sport === 'baseball' || t.sport === 'soccer' || t.sport === 'basketball';
+      const isScoreLine = t.sport === 'baseball' || t.sport === 'soccer' || t.sport === 'basketball' || t.sport === 'football';
       const isCricket = t.sport === 'cricket' || g.team.startsWith('IND') || g.team === 'KKR';
       const linkUrl = g.url || (isCricket ? getCricketMatchLink(g.team, g.opponent, new Date()) : null);
       const linkText = isCricket ? 'BCCI Match' : 'Link';
       // Tennis scores are a single set-by-set line (e.g. "4–6, 6–2, 6–7")
       // shared between both players, not a separate running number per
       // player — so it gets one combined row instead of the usual two
-      // stacked team/opponent score rows. Baseball/soccer/basketball get
-      // their own single-line "Team 4 – 2 Opponent" format for the same
-      // reason: one row reads more naturally than a follow-team-first
-      // stack once there's just a single final number per side. Cricket
-      // keeps the stacked default — its score is a longer innings summary,
-      // not a bare number, so it needs the extra row.
+      // stacked team/opponent score rows. Baseball/soccer/basketball/
+      // football get their own single-line "Team 4 – 2 Opponent" format
+      // for the same reason: one row reads more naturally than a
+      // follow-team-first stack once there's just a single final number
+      // per side. Cricket keeps the stacked default — its score is a
+      // longer innings summary, not a bare number, so it needs the extra
+      // row.
       const teamLinesHtml = isTennis ? `
           <div class="team-line followed">
             <span class="name">${badgeHtml(t, 22)}${followedTeamLabel(t, g)} <span style="font-weight:400;opacity:.7;">vs</span> ${g.opponent}</span>
@@ -256,13 +270,13 @@ export function renderMiniLive(games) {
     el.innerHTML = `<div class="mini-live-label">Live now</div>` + capped.map(g => {
       const t = teamOf(g.team);
       const isTennis = t.sport === 'tennis';
-      const isScoreLine = t.sport === 'baseball' || t.sport === 'soccer' || t.sport === 'basketball';
+      const isScoreLine = t.sport === 'baseball' || t.sport === 'soccer' || t.sport === 'basketball' || t.sport === 'football';
       // Tennis has one shared set-by-set line rather than a separate
       // number per player, so show "Player vs Opponent" with the score
       // line where the live status text normally goes. Baseball/soccer/
-      // basketball use the same "Team 4 – 2 Opponent" order as the desktop
-      // view (see renderLive) rather than the default "Team score –
-      // opponent score" layout cricket still uses.
+      // basketball/football use the same "Team 4 – 2 Opponent" order as
+      // the desktop view (see renderLive) rather than the default "Team
+      // score – opponent score" layout cricket still uses.
       const matchup = isTennis
         ? `${followedTeamLabel(t, g)} <span class="mini-vs">vs</span> ${g.opponent}`
         : isScoreLine

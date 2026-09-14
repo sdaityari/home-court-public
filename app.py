@@ -4,11 +4,16 @@ Home Court — scoreboard app entry point.
 Serves the tablet-facing HTML page and two JSON endpoints:
   - /api/scores     Backend-owned feeds only (cricket + Chelsea) — see
                      scores.py for why, and services/ for each source.
-                     MLB/NBA/EPL/WSL are fetched client-side instead (ESPN
-                     blocks server/cloud IPs); see static/js/espn.js.
+                     MLB/NBA/NFL/EPL/WSL are fetched client-side instead
+                     (ESPN blocks server/cloud IPs); see static/js/espn.js.
   - /api/highlight   Resolves a YouTube highlight link for a given
                      team/opponent pair, server-side, so the YouTube API
                      key never reaches the browser. See services/youtube.py.
+
+Also serves sport-specific views at /sport/<sport> — the exact same page
+and template, just scoped (client-side, via <body data-sport="...">) to
+that one sport's tracked teams/athletes and rivals. See SPORTS below and
+static/js/scope.js for how the frontend reads that scope.
 
 Project layout:
     config.py            env vars, constants, logging setup
@@ -33,7 +38,7 @@ Deploying:
     See DEPLOY.md for PythonAnywhere and Render instructions.
 """
 
-from flask import Flask, jsonify, render_template, request
+from flask import Flask, abort, jsonify, render_template, request
 
 from config import PORT, DEBUG
 from scores import get_scores
@@ -41,10 +46,32 @@ from services.youtube import cached_highlight_url
 
 app = Flask(__name__)
 
+# Sport-specific views, in the order/labels shown in the top nav. The slug
+# is also what gets written to <body data-sport="..."> and is matched
+# against each team/athlete's own `sport` tag in static/js/teams.js — add
+# a sport here (and to teams.js) and its own /sport/<slug> view exists
+# with no other routing changes needed.
+SPORTS = [
+    ("baseball", "Baseball"),
+    ("basketball", "Basketball"),
+    ("football", "Football"),
+    ("soccer", "Soccer"),
+    ("cricket", "Cricket"),
+    ("tennis", "Tennis"),
+]
+_SPORT_SLUGS = {slug for slug, _ in SPORTS}
+
 
 @app.route("/")
 def index():
-    return render_template("index.html")
+    return render_template("index.html", sport=None, sports=SPORTS)
+
+
+@app.route("/sport/<sport>")
+def sport_view(sport):
+    if sport not in _SPORT_SLUGS:
+        abort(404)
+    return render_template("index.html", sport=sport, sports=SPORTS)
 
 
 @app.route("/api/scores")

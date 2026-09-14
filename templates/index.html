@@ -19,40 +19,50 @@
 <link href="https://fonts.googleapis.com/css2?family=Anton&family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
 </head>
-<body>
+<body data-sport="{{ sport or '' }}">
 
   <div class="header">
-    <div class="brand">HOME&nbsp;COURT<span>.</span></div>
-    <div class="clock-row">
-      <div class="clock" id="clock">Thu 14 Aug — 9:42 PM ET</div>
-      <div class="filter-wrap">
-        <button class="filter-btn" id="filterBtn" aria-label="Filters" aria-expanded="false">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
-            <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
-            <line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
-          </svg>
-        </button>
-        <div class="filter-panel" id="filterPanel" hidden>
-          <div class="filter-row">
-            <label class="filter-toggle-label">
-              <span>Dark Mode</span>
-              <input type="checkbox" id="darkModeToggle" class="toggle-input">
-            </label>
+    <!-- Sport-specific view links. Lives inside .header, which the e-ink
+         @media block hides outright at exactly 800px, so this never
+         appears on the TRMNL/Kindle canvas — see the comment above
+         #miniView in styles.css. -->
+    <nav class="sport-nav" aria-label="Sport views">
+      <a href="{{ url_for('index') }}" class="sport-nav-link{{ ' active' if not sport else '' }}">All</a>
+      {% for slug, label in sports %}
+      <a href="{{ url_for('sport_view', sport=slug) }}" class="sport-nav-link{{ ' active' if sport == slug else '' }}">{{ label }}</a>
+      {% endfor %}
+    </nav>
+    <div class="header-top">
+      <div class="brand">HOME&nbsp;COURT<span>.</span></div>
+      <div class="clock-row">
+        <div class="clock" id="clock">Thu 14 Aug — 9:42 PM ET</div>
+        <div class="filter-wrap">
+          <button class="filter-btn" id="filterBtn" aria-label="Filters" aria-expanded="false">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="4" y1="6" x2="20" y2="6"/><circle cx="9" cy="6" r="2" fill="currentColor" stroke="none"/>
+              <line x1="4" y1="12" x2="20" y2="12"/><circle cx="15" cy="12" r="2" fill="currentColor" stroke="none"/>
+              <line x1="4" y1="18" x2="20" y2="18"/><circle cx="11" cy="18" r="2" fill="currentColor" stroke="none"/>
+            </svg>
+          </button>
+          <div class="filter-panel" id="filterPanel" hidden>
+            <div class="filter-top-row">
+              <button type="button" class="icon-toggle" id="darkModeToggle" aria-pressed="false" aria-label="Toggle dark mode" title="Dark mode">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+              </button>
+              <div class="schedule-seg" id="scheduleSeg" role="radiogroup" aria-label="Schedule range">
+                <button type="button" class="seg-btn" data-mode="compact" role="radio" aria-checked="true">Compact</button>
+                <button type="button" class="seg-btn" data-mode="7day" role="radio" aria-checked="false">7 Days</button>
+                <button type="button" class="seg-btn" data-mode="full" role="radio" aria-checked="false">Full</button>
+              </div>
+            </div>
+            <div class="filter-divider"></div>
+            <div id="filterTeams"><div class="filter-empty">Loading teams…</div></div>
           </div>
-          <div class="filter-row">
-            <label class="filter-toggle-label">
-              <span>Show Full Schedule</span>
-              <input type="checkbox" id="fullScheduleToggle" class="toggle-input">
-            </label>
-          </div>
-          <div class="filter-divider"></div>
-          <div id="filterTeams"><div class="filter-empty">Loading teams…</div></div>
         </div>
+        <button class="refresh-btn" id="refreshBtn" aria-label="Refresh live scores now" title="Refresh">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
+        </button>
       </div>
-      <button class="refresh-btn" id="refreshBtn" aria-label="Refresh live scores now" title="Refresh">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path></svg>
-      </button>
     </div>
   </div>
 

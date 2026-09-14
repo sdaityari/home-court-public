@@ -29,6 +29,8 @@
     --ind-accent: #FF671F;
     --tennis: #8A9A5B;
     --tennis-accent: #D7E08A;
+    --info: #2E86AB;
+    --info-dim: #D8ECF3;
   }
 
   [data-theme="dark"] {
@@ -45,6 +47,8 @@
     --win-text: #5FD489;
     --loss-bg: #3A1B1B;
     --loss-text: #E8756A;
+    --info: #6EC8E8;
+    --info-dim: #1B333D;
   }
 
   * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -65,32 +69,61 @@
   /* ---------- Header ---------- */
 
   .header {
-    display: flex;
-    align-items: baseline;
-    justify-content: space-between;
     padding-bottom: 20px;
     border-bottom: 1px solid var(--hairline);
     margin-bottom: 28px;
   }
 
-  .header .brand {
+  /* Sport-specific view links — All / Baseball / Basketball / etc.
+     Sits above the brand/clock row so it reads as top-level navigation,
+     not one more control bunched in with the filter/refresh buttons. */
+  .sport-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 14px;
+    margin-bottom: 14px;
+  }
+
+  .sport-nav-link {
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    text-decoration: none;
+    padding: 3px 1px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s ease, border-color 0.15s ease;
+  }
+  .sport-nav-link:hover { color: var(--text-dim); }
+  .sport-nav-link.active { color: var(--text); border-color: var(--live); }
+  .sport-nav-link:focus-visible { outline: 2px solid var(--text-dim); outline-offset: 2px; }
+
+  .header-top {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+  }
+
+  .header-top .brand {
     font-family: 'Anton', sans-serif;
     font-size: 30px;
     letter-spacing: 0.5px;
     text-transform: uppercase;
   }
 
-  .header .brand span {
+  .header-top .brand span {
     color: var(--text-faint);
   }
 
-  .header .clock-row {
+  .header-top .clock-row {
     display: flex;
     align-items: center;
     gap: 18px;
   }
 
-  .header .clock {
+  .header-top .clock {
     font-family: 'JetBrains Mono', monospace;
     font-size: 15px;
     color: var(--text-dim);
@@ -158,30 +191,59 @@
   [data-theme="dark"] .filter-panel { box-shadow: 0 8px 24px rgba(0,0,0,0.45); }
   .filter-panel[hidden] { display: none; }
 
-  .filter-row { padding: 4px 0; }
-  .filter-toggle-label {
+  .filter-top-row { display: flex; align-items: center; gap: 8px; }
+
+  /* Icon toggle (dark mode) — deliberately --info-colored rather than
+     --live, so it never reads as "another team filter chip" the way a
+     same-colored control would next to the rival/home chips below. */
+  .icon-toggle {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    flex-shrink: 0;
+    background: transparent;
+    border: 1px solid var(--hairline);
+    border-radius: 8px;
+    color: var(--text-dim);
     cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
   }
+  .icon-toggle svg { width: 15px; height: 15px; }
+  .icon-toggle[aria-pressed="true"] { background: var(--info-dim); border-color: var(--info); color: var(--info); }
+  .icon-toggle:hover { border-color: var(--text-faint); }
+  .icon-toggle:focus-visible { outline: 2px solid var(--text-dim); outline-offset: 2px; }
 
-  .filter-divider { height: 1px; background: var(--hairline); margin: 10px 0; }
+  /* 3-way schedule radio: Compact / 7 Days / Full */
+  .schedule-seg { display: flex; gap: 6px; flex: 1; }
+  .seg-btn {
+    flex: 1;
+    text-align: center;
+    font-family: 'Inter', sans-serif;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 7px 4px;
+    border-radius: 7px;
+    border: 1px solid var(--hairline);
+    background: transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: border-color 0.15s ease, color 0.15s ease, background-color 0.15s ease;
+  }
+  .seg-btn.active { background: var(--live-dim); border-color: var(--live); color: var(--live); }
+  .seg-btn:focus-visible { outline: 2px solid var(--text-dim); outline-offset: 2px; }
 
-  .filter-league-group { margin-bottom: 12px; }
+  .filter-divider { height: 1px; background: var(--hairline); margin: 12px 0; }
+
+  .filter-league-group { margin-bottom: 14px; }
   .filter-league-group:last-child { margin-bottom: 0; }
   .filter-league-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
-    cursor: pointer;
-    margin-bottom: 6px;
+    margin-bottom: 8px;
   }
   .filter-league-title {
     font-family: 'Inter', sans-serif;
@@ -191,31 +253,75 @@
     text-transform: uppercase;
     color: var(--text-faint);
   }
-  .filter-league-header .filter-league-title { margin-bottom: 0; }
-  .filter-league-header .toggle-input { flex-shrink: 0; }
-  .filter-team-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-    padding: 5px 0;
-    font-family: 'Inter', sans-serif;
-    font-size: 13px;
-    color: var(--text);
-    cursor: pointer;
-  }
-  .filter-team-row .name { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .filter-team-row .name span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .filter-empty { font-size: 12px; color: var(--text-faint); padding: 4px 0; }
 
-  /* ---------- Toggle Control (shared checkbox styling) ---------- */
-  .toggle-input {
-    accent-color: var(--live);
-    cursor: pointer;
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
+  /* Sport-level "select all rivals" — a switch rather than a chip, so it
+     reads as a settings control rather than one more selectable team. */
+  .filter-switch { position: relative; display: inline-block; width: 30px; height: 17px; flex-shrink: 0; }
+  .filter-switch input { position: absolute; opacity: 0; width: 100%; height: 100%; margin: 0; cursor: pointer; }
+  .filter-switch .track { position: absolute; inset: 0; background: var(--hairline); border-radius: 9px; transition: background-color 0.15s ease; }
+  .filter-switch .track::before {
+    content: ''; position: absolute; left: 2px; top: 2px; width: 13px; height: 13px;
+    border-radius: 50%; background: var(--text-faint); transition: transform 0.15s ease, background-color 0.15s ease;
   }
+  .filter-switch input:checked + .track { background: var(--live-dim); }
+  .filter-switch input:checked + .track::before { transform: translateX(13px); background: var(--live); }
+  .filter-switch input:focus-visible + .track { outline: 2px solid var(--text-dim); outline-offset: 2px; }
+
+  /* Chip grid — rival teams/athletes as tappable pills instead of full
+     checkbox rows, so more fit before the panel needs to scroll. */
+  .filter-chip-grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filter-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 6px 11px;
+    border-radius: 14px;
+    border: 1px solid var(--hairline);
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-dim);
+    background: transparent;
+    cursor: pointer;
+    max-width: 100%;
+  }
+  .filter-chip.on { background: var(--live-dim); border-color: var(--live); color: var(--live); }
+  .filter-chip .chip-label { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  /* Home team/athlete chip — always its own accent color (not --live),
+     with a crest for team sports and an "x"/"+" to hide or restore it. */
+  .filter-chip.home {
+    --chip-color: var(--text-dim);
+    border-width: 1.5px;
+    border-color: var(--chip-color);
+    background: color-mix(in srgb, var(--chip-color) 15%, transparent);
+    color: var(--text);
+  }
+  .filter-chip.home.hidden-home {
+    border-style: dashed;
+    background: transparent;
+    color: var(--text-faint);
+  }
+  .filter-chip .chip-crest { width: 14px; height: 14px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+  .filter-chip .chip-hide { margin-left: 2px; opacity: 0.7; font-size: 11px; line-height: 1; }
+  .filter-chip .chip-hide:hover { opacity: 1; }
+
+  .filter-search {
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    background: var(--panel-raised);
+    border: 1px solid var(--hairline);
+    border-radius: 7px;
+    padding: 7px 10px;
+    margin-bottom: 10px;
+    font-family: 'Inter', sans-serif;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .filter-search::placeholder { color: var(--text-faint); }
+  .filter-search:focus-visible { outline: 2px solid var(--text-dim); outline-offset: 1px; }
 
   /* ---------- Section labels ---------- */
 
@@ -547,12 +653,12 @@
        (no wrap control), so the browser broke it mid-word across several
        lines. Stacking brand and clock-row onto their own full-width rows
        gives the clock enough room to sit on one line at this width. */
-    .header {
+    .header-top {
       flex-direction: column;
       align-items: flex-start;
       gap: 14px;
     }
-    .header .clock-row {
+    .header-top .clock-row {
       width: 100%;
       justify-content: space-between;
     }

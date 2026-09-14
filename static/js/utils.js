@@ -84,9 +84,21 @@ export function dedupeFixtures(games) {
     const seen = new Set();
     const out = [];
     for (const g of games) {
-      const dt = parseDate(g.rawWhen || g.when);
-      const day = Number.isNaN(dt.getTime()) ? String(g.when) : dt.toISOString().slice(0, 10);
-      const key = `${g.team || ''}|${day}|${(g.opponent || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8)}`;
+      let key;
+      if (g.eventId != null) {
+        // Same real-world match, independently fetched once per tracked
+        // side (e.g. two tracked teams playing each other) — ESPN's event
+        // id is identical across both sides' own schedule feeds, unlike
+        // team+opponent-name matching, which sees two different rows since
+        // each side names the OTHER as "opponent". Whichever side's fetch
+        // resolved first in the merge wins and is shown; the other side's
+        // copy is dropped.
+        key = `evt:${g.eventId}`;
+      } else {
+        const dt = parseDate(g.rawWhen || g.when);
+        const day = Number.isNaN(dt.getTime()) ? String(g.when) : dt.toISOString().slice(0, 10);
+        key = `${g.team || ''}|${day}|${(g.opponent || '').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 8)}`;
+      }
       if (!seen.has(key)) { seen.add(key); out.push(g); }
     }
     return out;
@@ -138,13 +150,20 @@ export async function attachHighlight(game, displayName) {
     const dateStr = formatDateForSearch(game.rawWhen || game.when);
     const suffix = dateStr ? ` ${dateStr}` : '';
     const fallback = `https://www.youtube.com/results?search_query=${encodeURIComponent(displayName + ' vs ' + game.opponent + suffix + ' highlights')}`;
+    // eventId is carried through unchanged below (not just copied — it's
+    // the field dedupeFixtures keys on to collapse the same real-world
+    // match when it's independently fetched once per tracked side, e.g.
+    // two tracked teams/players facing each other). Dropping it here used
+    // to make every completed head-to-head game between two tracked sides
+    // show up as two separate rows, since only recent/completed games
+    // pass through this function.
     try {
       const res = await fetchWithTimeout(
         `/api/highlight?team=${encodeURIComponent(displayName)}&opponent=${encodeURIComponent(game.opponent)}${dateStr ? '&when=' + encodeURIComponent(dateStr) : ''}`, 8000);
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      return { team: game.team, opponent: game.opponent, partner: game.partner, rawWhen: game.rawWhen, when: game.when, result: game.result, line: game.line, url: game.url, competition: game.competition, highlight: data.url || fallback };
+      return { team: game.team, opponent: game.opponent, partner: game.partner, rawWhen: game.rawWhen, when: game.when, result: game.result, line: game.line, url: game.url, competition: game.competition, eventId: game.eventId, highlight: data.url || fallback };
     } catch (e) {
-      return { team: game.team, opponent: game.opponent, partner: game.partner, rawWhen: game.rawWhen, when: game.when, result: game.result, line: game.line, url: game.url, competition: game.competition, highlight: fallback };
+      return { team: game.team, opponent: game.opponent, partner: game.partner, rawWhen: game.rawWhen, when: game.when, result: game.result, line: game.line, url: game.url, competition: game.competition, eventId: game.eventId, highlight: fallback };
     }
   }
